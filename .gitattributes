@@ -1,0 +1,5 @@
+# Keep the working tree consistent across platforms; scripts are plain text.
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.jpg binary
+*.png binary
