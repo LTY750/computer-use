@@ -360,6 +360,44 @@ async function selectWindow() {
   return { app: matches[0].app, id: matches[0].id, title: matches[0].title };
 }
 
+// Retention: every `state` / `click` / `key` / `scroll` call drops one screenshot into
+// .state/shots, so the folder would grow without bound. Keep the newest N (default 100,
+// roughly 4 MB) and delete the rest. CUA_SHOT_KEEP=0 disables pruning entirely.
+const SHOT_KEEP = (() => {
+  const raw = Number(process.env.CUA_SHOT_KEEP);
+  return Number.isInteger(raw) && raw >= 0 ? raw : 100;
+})();
+
+function pruneShots() {
+  if (SHOT_KEEP === 0) return;
+  let entries;
+  try {
+    entries = fs
+      .readdirSync(SHOT_DIR, { withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => {
+        const file = path.join(SHOT_DIR, entry.name);
+        try {
+          return { file, mtime: fs.statSync(file).mtimeMs };
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+  } catch {
+    return; // no shots dir yet - nothing to prune
+  }
+  if (entries.length <= SHOT_KEEP) return;
+  entries.sort((a, b) => b.mtime - a.mtime); // newest first
+  for (const stale of entries.slice(SHOT_KEEP)) {
+    try {
+      fs.unlinkSync(stale.file);
+    } catch {
+      /* a locked or already-deleted shot must never fail the command */
+    }
+  }
+}
+
 async function capture(window, { shot = true, text = true, save = false } = {}) {
   if (!shot && !text) text = true;
   const state = await sky.get_window_state({
@@ -388,6 +426,7 @@ async function capture(window, { shot = true, text = true, save = false } = {}) 
         fs.writeFileSync(target, Buffer.from(String(main.url).split(",")[1] ?? "", "base64"));
         screenshot.path = target;
         screenshot.bytes = fs.statSync(target).size;
+        if (!flags.shot) pruneShots(); // an explicit --shot path is the caller's business
       }
     }
   }

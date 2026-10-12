@@ -73,7 +73,9 @@ Exit codes: `0` ok, `1` error, `2` ambiguous target (candidates are listed), `3`
 4. `state` again to confirm the screen actually changed.
 
 Screenshots land in `.state/shots/*.jpg`; open one when a visual check matters (the JSON only
-gives its dimensions and path). Trees drift between calls - always re-run `state` instead of
+gives its dimensions and path). Only the newest 100 shots are kept - older ones are pruned
+automatically, `CUA_SHOT_KEEP` overrides the limit and `CUA_SHOT_KEEP=0` disables pruning.
+Trees drift between calls - always re-run `state` instead of
 reusing an old index, and pass `--expect "text"` so a shifted index fails closed instead of
 hitting the wrong control.
 
