@@ -1,0 +1,10 @@
+# Local machine state: per-app approvals, the remembered window, and screenshots.
+# Never commit these - they describe one machine, not the tool.
+.state/
+*.jpg
+
+# Editor / OS noise
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
